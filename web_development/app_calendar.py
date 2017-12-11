@@ -6,7 +6,7 @@ currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentfram
 parentdir = os.path.dirname(currentdir)
 sys.path.insert(0,parentdir)
 from database_functions import *
-
+from sklearn.metrics import recall_score
 
 def day_timeslots(orgcode, modality, dept, date_time):
     '''
@@ -87,14 +87,15 @@ def generate_timeslots(orgcode, modality, dept, dt_initial, threshold = 0.5):
     table_data = []
     # initialize days list
     days = []
+    tpr_week = []
     # iterating over days of the week
     for i in range(0,n_days):
         dt_temp = dt_initial + dt.timedelta(days = i)
         dt_next = dt_temp + dt.timedelta(days = 1)
         days.append(dt_temp.strftime("%A") + '\n'+dt_temp.strftime("%m")+'/'+dt_temp.strftime("%d") )
-
-        info_day=day_timeslots(orgcode, modality, dept, dt_temp)
-
+        tpr = tpr_org(orgcode, dt_temp.weekday())
+        tpr_week.append(tpr)
+        info_day= day_timeslots(orgcode, modality, dept, dt_temp)
 
         #info_day = info_filt.loc[(info_filt.datetime >= dt_temp) & (info_filt.datetime < dt_next)]
         # initialize row
@@ -140,7 +141,9 @@ def generate_timeslots(orgcode, modality, dept, dt_initial, threshold = 0.5):
         dt_ts = dt.datetime.combine(dt_initial.date(),time_initial) + j*ts_duration
         time = dt_ts.strftime("%H") + ':'+dt_ts.strftime("%M")
         ts_times.append(time)
-    return table_data, days, ts_times
+    return table_data, days, ts_times, tpr_week
+
+
 
 
 def predict_probability(exam_id):
@@ -159,6 +162,34 @@ def predict_probability(exam_id):
     print(info_day)
     probability = np.random.random(1)[0]
     return probability
+
+def tpr_org(orgcode, day):
+    query = "SELECT Exam_ID FROM results"
+    exam_ids_test = list(query_data("./data/db/223ADB3.db", query)['Exam_ID'])
+    query = "SELECT label, `Exam_ID`  FROM appointments WHERE `Exam_ID` IN ("
+    for eid in exam_ids_test:
+        query += str(eid) + ", "
+    query = query[:-2]
+    query += ")"
+    query += "AND OrgCode = '%s'" %(orgcode)
+    query += "AND Weekday = %i" %day
+    data_label = query_data("./data/db/223ADB3.db", query)
+    exam_ids_filt = list(data_label['Exam_ID'])
+    query = "SELECT Exam_ID, Predictions from results WHERE `Exam_ID` IN ("
+    for eid in exam_ids_filt:
+        query += str(eid) + ", "
+    query = query[:-2]
+    query += ")"
+    data_pred = query_data("./data/db/223ADB3.db", query)
+    # Sort them by Exam_ID
+    data_label.sort_values(by = 'Exam_ID', inplace=True)
+    data_pred.sort_values(by = 'Exam_ID', inplace=True)
+    # make them np arrays
+    labels = data_label.Label.as_matrix()
+    predictions = data_pred.Predictions.as_matrix()
+    #tn, fp, fn, tp = confusion_matrix(labels, predictions).ravel()
+    tpr = recall_score(labels, predictions)
+    return tpr
 
 # Testing
 #if __name__ == '__main__':

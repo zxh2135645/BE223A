@@ -154,7 +154,7 @@ def calendar_json():
     dept = request.args.get('departmentcode')
     # The initial date on the week calendar hard-coded, to be updated when data are current
     initial_date = datetime(3246,12,10)
-    table_data, days, ts_times = generate_timeslots(orgcode, modality, dept, initial_date)
+    table_data, days, ts_times, tpr_week = generate_timeslots(orgcode, modality, dept, initial_date)
 
     ts_data = timeslots_for_charts(orgcode, modality, dept, initial_date)
 
@@ -167,7 +167,8 @@ def calendar_json():
         'row_names': ts_times,
         'rows' : table_data,
         'ts_data': ts_data,
-        'ts_data2': ts_data2
+        'ts_data2': ts_data2,
+        'tpr_week': tpr_week
     }
     return jsonify(result = table)
 

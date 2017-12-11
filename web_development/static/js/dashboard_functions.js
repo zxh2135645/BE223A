@@ -48,6 +48,23 @@ function load_table(){
     html+= '</tr>';
     }
     html+='</tbody></table>';
+    // Table for true positive rates
+    html+='<table class="table table-bordered"><thead>';
+    for (var i=0;i<columns_names.length;i++){
+      html+= "<th>" + columns_names[i] + "</th>";
+    }
+    html+='</thead><tbody>';
+    for (var i=0;i<columns_names.length;i++){
+      html+= '<tr>';
+      var row_name = row_names[i];
+      html+= "<td>" + "Overbooking rate" + "</td>";
+
+      var columns = time_slot.tpr_week;
+      for (var j=0;j<columns.length;j++){
+      }
+    html+= '</tr>';
+    }
+    html+='</tbody></table>';
 
     $('#calendar').html(html);
     $('[data-toggle="tooltip"]').tooltip();
